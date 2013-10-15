@@ -1,4 +1,4 @@
-# 公司内部员工活动抽奖小工具 #
+# 公司内部员工抽奖活动小工具 #
 
 ## 使用说明：
 1. annual.html 页面 script 中配置参与成员(members)，阶段数(scenenum)，阶段计划(projects)。
