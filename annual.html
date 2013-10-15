@@ -1,0 +1,566 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+<title>堆糖</title>
+<link href="css/reset.css" rel="stylesheet" type="text/css"/>
+<link href="css/main.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="js/jquery-1.10.1.min.js" ></script>
+</head>
+<body>
+<div class="clr">
+	<a id="projectin" class="abtn" href="javascript:;"><u>第0阶段抽奖数据导入</u></a>
+</div>
+<div class="clr">
+	<a id="seeprizers" href="javascript:;">查看结果</a>
+	<a id="cleanprizer" class="abtn r" href="javascript:;"><u>清除获奖者名单</u></a>
+	<a id="cleanproject" class="abtn r" href="javascript:;"><u>重置抽奖信息</u></a>
+</div>
+
+
+
+
+<script type="text/javascript">
+var members = [
+	{"id":0,"name":"狄敬超","pic":"3D.jpg"},
+	{"id":1,"name":"杨洋","pic":"yangyang.JPG"},
+	{"id":2,"name":"张娟","pic":"zj.JPG"},
+	{"id":3,"name":"陈波","pic":"波波.JPG"},
+	{"id":4,"name":"杜程程","pic":"程程.jpg"},
+	{"id":5,"name":"刘翔","pic":"大汗.JPG"},
+	{"id":6,"name":"盛侦","pic":"大圣.jpg"},
+	{"id":7,"name":"曹力元","pic":"豆子.jpg"},
+	{"id":8,"name":"朱晶晶","pic":"晶晶.jpg"},
+	{"id":9,"name":"曹文炯","pic":"老轮子.JPG"},
+	{"id":10,"name":"夏雪","pic":"了了.jpg"},
+	{"id":11,"name":"陆鸣之","pic":"麦基.png"},
+	{"id":12,"name":"刘睿哲","pic":"睿哲.JPG"},
+	{"id":13,"name":"张晨","pic":"三藏.JPG"},
+	{"id":14,"name":"吴仕敏","pic":"仕敏.JPG"},
+	{"id":15,"name":"许腾飞","pic":"腾飞.jpg"},
+	{"id":16,"name":"赵文婷","pic":"文婷.JPG"},
+	{"id":17,"name":"计成军","pic":"系不紧.jpg"},
+	{"id":18,"name":"刘婷","pic":"小朋友.jpg"},
+	{"id":19,"name":"蒋云鹏","pic":"小云.jpg"},
+	{"id":20,"name":"余志润","pic":"小志.JPG"},
+	{"id":21,"name":"朱斌","pic":"小朱.jpg"},
+	{"id":22,"name":"杨毅然","pic":"毅然.jpg"},
+	{"id":23,"name":"刘英","pic":"英子.jpg"},
+	{"id":24,"name":"黄莹莹","pic":"莹莹.JPG"},
+	{"id":25,"name":"王昭","pic":"昭昭.jpg"},
+	{"id":26,"name":"杨佐琪","pic":"左其.jpg"}
+]
+
+
+// 已经中奖的名单，分上下两个阶段
+var prizers = getInfo('prizers') ? JSON.parse(getInfo('prizers')) : [];
+
+// scene 代表阶段，每一阶段每人只有一次机会，分多轮抽奖。
+// 总共的阶段数
+var scenenum = 3;
+
+// prizers 阶段数组补全
+setPrizers(prizers,scenenum);
+
+
+
+// 抽奖核心信息，轮次和每轮的奖品发放
+var projects = getInfo('projects') ? JSON.parse(getInfo('projects')) : [
+	{
+		"scene" : 0,
+		"prizes" : ["88￥红包","88￥红包","188￥红包","388￥红包","88￥红包"]
+	},
+	{
+		"scene" : 0,
+		"prizes" : ["388￥红包","88￥红包","188￥红包","88￥红包"]
+	},
+	{
+		"scene" : 0,
+		"prizes" : ["88￥红包","88￥红包","588￥红包","88￥红包"]
+	},
+	{
+		"scene" : 0,
+		"prizes" : ["88￥红包","188￥红包","888￥红包","88￥红包","88￥红包"]
+	},
+	{
+		"scene" : 0,
+		"prizes" : ["588￥红包","188￥红包","88￥红包","88￥红包"]
+	},
+	{
+		"scene" : 0,
+		"prizes" : ["188￥红包","88￥红包","388￥红包","88￥红包","188￥红包"]
+	},
+	{
+		"scene" : 1,
+		"prizes" : ["免罚30分钟","休假3天","免罚1小时","休假半天","早餐一周","免罚30分钟","休假半天"]
+	},
+	{
+		"scene" : 1,
+		"prizes" : ["免罚30分钟","休假半天","咖啡三次","免罚1小时","早餐一周","免罚30分钟"]
+	},
+	{
+		"scene" : 1,
+		"prizes" : ["免罚30分钟","休假半天","咖啡三次","iPad mini","早餐一周","咖啡三次","免罚30分钟"]
+	},
+	{
+		"scene" : 1,
+		"prizes" : ["免罚30分钟","休假2天","免罚30分钟","免罚1小时","休假半天","休假半天","免罚30分钟"]
+	}
+]
+
+// 当前抽奖轮次
+var prostep = parseInt(getInfo('prostep')) || 0;
+
+// 当轮抽奖已经中奖人
+var curprizer = []; 
+var curprizername = []; 
+var curprize = [];
+
+// 当前抽奖阶段，总共只有两阶段
+var scepart = 0;
+
+$(function (){
+	// 设置开始按钮里的文案值，与当前轮次相关联
+	setBeginBtn()
+	$('#projectin').click(function (e){
+		e.preventDefault();
+		e.stopPropagation();
+		
+		var $t = $(this);
+		$t.css('display','none')
+		$('body').prepend(htmlPiece(prostep))
+	})
+	// 立即查看当前中奖名单
+	$('#seeprizers').click(function (e){
+		var $dropprizers = $('#dropprizers')
+		if( !$dropprizers.length ){
+			$dropprizers = $('<div id="dropprizers"><h2>(每一阶段每人只有一次机会，分多轮抽奖)</h2><a id="closeprizers" href="javascript:;"></a></div>').css("display","none").prependTo('body').slideDown(800,function (){
+				loadPrizerData($dropprizers)
+			});
+
+			$('#closeprizers').click(function (e){
+				$('#dropprizers').slideUp(800,function (){
+					$('#dropprizers').remove()
+				})
+			})
+		}
+	})
+	// 清除获奖者名单
+	$('#cleanprizer').click(function (e){
+		e.preventDefault();
+		e.stopPropagation();
+		
+		removeInfo('prizers');
+
+		prizers = [];
+		setPrizers(prizers,scenenum);
+	})
+	// 重置抽奖信息
+	$('#cleanproject').click(function (e){
+		e.preventDefault(),
+		e.stopPropagation(),
+		
+		removeInfo('projects'),
+		removeInfo('prostep'),
+
+		// 当前抽奖轮次
+		prostep = 0,
+
+		// 当轮抽奖已经中奖人
+		curprizer = [],
+		curprizername = [], 
+		curprize = [],
+
+		// 当前抽奖阶段，总共只有两阶段
+		scepart = 0,
+
+		setBeginBtn();
+	})
+
+	// 监控document 点击，以操控抽奖停止按钮
+	$(document).click(function (e){
+		var $clk = $('#topprizer').find('div').not('.pclicked').eq(0);
+		if( $clk.length ){
+			$clk.click();
+		}
+	})
+	.delegate('#iptconfirm .subadd','click',function (e){
+		var $t = $(this),
+			$m = $t.closest('div.l').prev();
+
+		if( $m.length ){
+			var $cop = $m.clone(true),
+				n = getNum($m.attr('class'));
+			
+			$cop.attr('class','ipt subprize_'+(n+1));
+			$m.after($cop);
+		}else{
+			$('<input type="text" class="ipt subprize_0" value="" />').prependTo($('#iptconfirm'));
+		}
+	})
+	.delegate('#iptconfirm .subreduce','click',function (e){
+		var $t = $(this),
+			$m = $t.closest('div.l').prev();
+
+		if( $m.length ){
+			$m.remove();
+		}
+	})
+	.delegate('#iptconfirm .abtn','click',function (e){
+		var $iptconf = $('#iptconfirm'),
+			proidx = getNum($iptconf.attr('class')),
+			$ipts = $iptconf.find('input.ipt'),
+			newarr = [];
+		$ipts.each(function (i,e){
+			newarr.push($(e).val());
+		})
+
+		if( newarr.length ){
+			$iptconf.remove(),
+			projects[proidx].prizes = newarr,
+			saveInfo('projects',JSON.stringify(projects)),
+			startScene();
+		}
+	})
+})
+
+
+// 设置开始按钮里的文案值，与当前轮次相关联
+function setBeginBtn(){
+	$('#projectin').html('<u>第'+prostep+'轮抽奖数据导入</u>');
+}
+
+// 中奖名单分阶段数组补全
+function setPrizers(prizers,scenenum){
+	for( var i=prizers.length; i<scenenum; i++ ){
+		prizers.push([]);
+	}
+}
+
+// 抽奖场景开始
+function startScene(){
+	var $dropscene = $('#dropscene');
+	if( !$dropscene.length ){
+		$dropscene = $('<div id="dropscene"><a id="closescene" href="javascript:;"></a></div>').css("display","none").prependTo('body').slideDown(800,function (){
+			loadSceneData($dropscene);
+		});
+		
+
+
+		$('#closescene').click(function (e){
+			$('#dropscene').slideUp(800,function (){
+				$('#dropscene').remove();
+			})
+			$('#projectin').css('display','block'),
+
+			// 当轮已经中奖列表重置
+			curprizer = [],
+			curprizername = [],
+			curprize = [];
+		})
+	}
+}
+// 装载场景数据
+function loadSceneData($dropscene){
+	if( $dropscene.length ){
+		var arrprizes = projects[prostep].prizes,
+			scenepart = projects[prostep].scene,
+			len = arrprizes.length;
+
+		// 全局scepart 赋值，表示当前阶段数值
+		scepart = scenepart;
+		var arrgot = [];
+		for( var j=0; j<prizers[scenepart].length; j++ ){
+			arrgot.push(prizers[scenepart][j].id);
+		}
+
+		var tmpmembers = $(members).filter(function (i){
+			return $.inArray(this.id,arrgot) == -1;
+		})
+
+		// 当轮竞争人数
+		var candinum = tmpmembers.length;
+		$candinum = $('#candinum');
+		if( !$candinum.length ){
+			$('<div id="candinum"><div>'+candinum+'人</div>本轮角逐</div>')
+			.appendTo('#dropscene')
+		}else{
+			$candinum.html('<div>'+candinum+'人</div>本轮角逐')
+		}
+
+		var $top = $('<div id="topprizer" class="clr"></div>').html(function (){
+			var str = '';
+			for( var i=0; i<len; i++ ){
+				str += '<div>'+arrprizes[i]+'</div>';
+			}
+			return str;
+		})
+		.appendTo($dropscene)
+
+
+		var $wrap = $('<div class="vertisliderwrap"></div>').html('<div class="slidercover"></div>').appendTo($dropscene)
+		for( var i=0; i<len; i++ ){
+			$('<div class="vertislider"></div>').html(function (){
+				var str = '';
+				// 打乱数组顺序
+				tmpmembers = shuffle(tmpmembers)
+				for( var k=0; k<tmpmembers.length; k++ ){
+					str += '<img data-id="'+tmpmembers[k].id+'" src="ava/'+tmpmembers[k].pic+'" alt="'+tmpmembers[k].name+'"/>';
+				}
+				return str;
+			})
+			.appendTo($wrap)
+		}
+
+		// 启动自动循环
+		$dropscene.find('.vertislider').each(function (i,e){
+			setTimeout(function (){
+				$(e).vertiautoslider({
+					"stopBtn" : $top.children().eq(i),
+					"showLotteryResult" : function (){
+						$('<div class="resultname"></div>').appendTo('#dropscene')
+						.html(function (){
+							var str = '<h3>恭喜以下同学获得本轮奖项：</h3><ul>';
+							for( var i=0; i<curprizer.length; i++ ){
+								str += '<li style="top:'+(i*20)+'px;left:'+((i%4)*200)+'px"><b>'+curprizername[i]+'</b>抢到<i>'+curprize[i]+'</i></li>'
+
+
+								prizers[scepart].push({"id":curprizer[i],"name":curprizername[i],"prize":curprize[i]})
+							}
+							str += '</ul>'
+							return str;
+						})
+
+						// 同时进入下一轮抽奖筹备
+						prostep++;
+
+						// localStorage 保存状态
+						saveInfo('prizers',JSON.stringify(prizers)),
+						saveInfo('prostep',prostep),
+						// 设置开始按钮里的文案值，与当前轮次相关联
+						setBeginBtn();
+					}
+				})
+			},i*800)
+		})
+	}
+}
+
+// 确认本轮抽奖奖品，参数 idx 表示第几轮次抽奖
+function htmlPiece(idx){
+	var str = '<div id="iptconfirm" class="iptconfirm-'+idx+' clr" >',
+		arr = projects[idx].prizes,
+		n = arr.length;
+
+	for( var i=0; i<n; i++ ){
+		str += '<input type="text" class="ipt subprize_'+i+'" value="'+arr[i]+'" />';
+	}
+
+	str += '<div class="l"><a class="subadd" href="javascript:;">增加</a><a class="subreduce" href="javascript:;">减少</a></div><div class="clr"><a href="javascript:;" class="abtn"><u>开始抽奖</u></a></div></div>';
+	return str;
+}
+
+
+// 装载当前所有获奖者名单
+function loadPrizerData($dropprizers){
+	if( $dropprizers.length ){
+		for( var i=0; i<prizers.length; i++ ){
+			$('<h3>第'+i+'阶段抽奖结果</h3>').appendTo($dropprizers);
+
+			var str = '<ul>';
+			for( var j=0; j<prizers[i].length; j++ ){
+				var prz = prizers[i][j];
+				str += '<li><b>'+prz.name+'</b> 获得 <i>'+prz.prize+'</i></li>';
+			}
+			str += '</ul>';
+			$(str).appendTo($dropprizers);
+		}
+	}
+}
+
+// 取出字符串中第一次出现的数字
+function getNum(str){
+	return str ? parseInt(str.replace(/^([^\d]*)/g,'')) || 0 : 0;
+}
+
+// localStorage 保存状态
+function saveInfo(name,value){
+	if( window.localStorage && localStorage ){
+		localStorage.setItem(name,value);
+	}
+}
+// localStorage 获取状态值
+function getInfo(name){
+	if( window.localStorage && localStorage ){
+		return localStorage[name];
+	}
+}
+// localStorage 删除保存数据
+function removeInfo(name){
+	if( window.localStorage && localStorage ){
+		localStorage.removeItem(name);
+	}
+}
+
+// 产生绝对随机数
+rnd.seed = new Date().getTime();
+function rnd(){
+	rnd.seed = (rnd.seed*9301+49297) % 233280;
+	return rnd.seed/(233280.0);
+};
+function rand(number){
+	return Math.ceil(rnd()*number);
+};
+
+// 洗牌，打乱数组
+function shuffle(arr){
+	var newarr = arr.slice(0),
+		l = 0,
+		rarr = [];
+	while( (l=newarr.length) ){
+		rarr.push(newarr.splice(rand(l)-1,1)[0]);
+	}
+	return rarr;
+}
+
+
+// 垂直方向的slider
+;(function($){
+	$.fn.vertiautoslider = function(options){
+		var opts = $.extend(true,{},$.fn.vertiautoslider.defaults,options),
+			$t = $(this);
+
+		opts.startTime = new Date().getTime(),
+		opts.stopBeginTime = 0,
+		opts.nowTime = 0,
+		opts.isEnding = false,
+		opts.isPositioning = false,
+		opts.cDelay = opts.animDelay;
+
+		// 如果节点存在，并且有 children 才能继续
+		if( $t.children().length ){
+			_init();
+		}
+
+		// 减速部分减速函数
+		function _tan(start, dura, delay){
+			return 3*Math.tan(Math.PI * (new Date().getTime() - start) / 2 /dura) + delay;
+		}
+
+		function _end(f){
+			if( !opts.isEnding ){
+				opts.nowTime = new Date().getTime();
+				// 时间到了，可以进入停止阶段了
+				if( opts.nowTime - opts.startTime > opts.timeLast || f ){
+					opts.isEnding = true,
+					opts.stopBeginTime = opts.nowTime;
+				}
+			}
+		}
+
+		function _init(){
+			var tm, pause = false,fc, ht;
+			var __pace = function(){
+				fc = $t.children().first(),
+				ht = fc.outerHeight(true),
+				clearInterval(tm);
+
+				if( opts.isEnding ){
+					var tmpanidelay = _tan(opts.stopBeginTime, opts.stopDura, opts.cDelay);
+					opts.nowTime = new Date().getTime();
+					if( tmpanidelay > 0 && opts.nowTime - opts.stopBeginTime < opts.stopDura){
+						opts.cDelay = Math.min(opts.maxDelay, tmpanidelay);
+					}else{
+						opts.stopBeginTime = 0,
+						opts.isEnding = false,
+						opts.isPositioning = true;
+					}
+				}
+
+				tm=setInterval(__slide, opts.cDelay);
+			}
+
+
+			var __slide = function(){
+				if(pause) return;
+
+				_end();
+
+				if($t.scrollTop() + opts.stepLen >= ht) {
+					clearInterval(tm),
+					$t.append(fc),
+					$t.scrollTop(0);
+
+					// opts.isPositioning 表示正在寻找终点
+					if( !opts.isPositioning ){
+						if( opts.delay ){
+							setTimeout(__pace, opts.delay)
+						}else{
+							__pace()
+						}
+					}else{
+						var $show = $t.children().eq(1);
+						if( $show.length ){
+							var nid = parseInt($show.data("id")),
+								nname = $show.attr('alt');
+							if( $.inArray(nid,curprizer) != -1 ){
+								// 如果当轮已经中过奖了，应该继续
+								if( opts.delay ){
+									setTimeout(__pace, opts.delay)
+								}else{
+									__pace()
+								}
+							}else{
+								var idx = $('.vertislider').index($t),
+									prize = $('#topprizer').find('div').eq(idx).text();
+
+								curprizer.push(nid),
+								curprizername.push(nname),
+								curprize.push(prize),
+
+
+								// 定位结束
+								isPositioning = false,
+								$t.addClass('slideover');
+
+								// 本轮抽奖结算
+								if( !$('.vertislider').not('.slideover').length ){
+									opts.showLotteryResult();
+								}
+							}
+						}
+					}
+				}else{
+					$t.scrollTop($t.scrollTop()+opts.stepLen);
+				}
+			}
+			
+			setTimeout(__pace, opts.firstDelay)
+
+			$(opts.stopBtn).click(function (e){
+				e.preventDefault(),
+				e.stopPropagation(),
+				$(this).addClass('pclicked'),
+				_end(true);
+			})
+		}
+
+	}
+
+	$.fn.vertiautoslider.defaults = {
+		stopBtn : null,						/* 可以控制停止的按钮 */
+		stepLen : 14,						/* 每次移动的距离 */
+		firstDelay : 0,						/* 初次运行的delay */
+		delay : 0,							/* 中途运行的delay */
+		timeLast : 50000,					/* 匀速运转持续时间 */
+		animDelay : 10,						/* 动画中的delay */
+		maxDelay : 60,						/* 动画中最慢的delay */
+		stopDura : 1000						/* 停止阶段的持续时间 */
+	};
+	
+})(jQuery);
+</script>
+</body>
+</html>
+
